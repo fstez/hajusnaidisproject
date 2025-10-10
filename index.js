@@ -5,6 +5,10 @@ const swaggerDocument = require('./docs/swagger.json');
 const app = express();
 const port = 8080;
 
+app.get('/games', (req, res) => {
+    res.send(["Minecraft", "CounterStrike2", "Dota 2"])
+})
+
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', (req, res) => res.redirect('/docs'));
