@@ -72,14 +72,19 @@ app.get('/games/:id', (req, res) => {
 });
 
 app.delete('/games/:id', (req, res) => {
-    if (typeof games[req.params.id - 1] === "undefined") {
-        return res.status(404).send({ error: "Game not found" })
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
     }
 
-    game.splice(req.params.id - 1, 1)
+    const idx = games.findIndex(g => g.id === id);
+    if (idx === -1) {
+        return res.status(404).json({ error: 'Game not found' });
+    }
 
-    res.status(204).send({ error: "No content" })
-})
+    games.splice(idx, 1);
+    return res.status(204).end();
+});
 
 
 
