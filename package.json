@@ -1,0 +1,24 @@
+{
+  "name": "hajusproject",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bytkie/hajusnaidisproject.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bytkie/hajusnaidisproject/issues"
+  },
+  "homepage": "https://github.com/bytkie/hajusnaidisproject#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
