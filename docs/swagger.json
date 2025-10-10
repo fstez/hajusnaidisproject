@@ -13,6 +13,9 @@
     "produces": [
         "application/json"
     ],
+    "consumes": [
+        "application/json"
+    ],
     "paths": {
         "/games": {
             "get": {
@@ -50,6 +53,66 @@
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new game",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "price"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "example": "Hades"
+                                },
+                                "price": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "example": 19.99
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Game"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "415": {
+                        "description": "Unsupported Media Type",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/Error"
                         }

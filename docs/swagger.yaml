@@ -1,0 +1,148 @@
+swagger: "2.0"
+info:
+  title: Games API
+  version: "1.0.0"
+  description: |
+    This is a Swagger UI for our Games API.
+
+    ### Error handling
+    Errors use HTTP 400-599 with body:
+    ```
+    { "error": "Cleartext explanation of the error that occurred" }
+    ```
+host: localhost:8080
+schemes: [http]
+basePath: /
+consumes: [application/json]
+produces: [application/json]
+
+tags:
+  - name: games
+    description: Games resources
+
+paths:
+  /games:
+    get:
+      tags: [games]
+      summary: List games (names only)
+      description: Returns an array of game names. Supports search `q` and ordering `order=asc|desc`.
+      parameters:
+        - name: q
+          in: query
+          type: string
+          description: Case-insensitive substring search by name
+        - name: order
+          in: query
+          type: string
+          enum: [asc, desc]
+          default: asc
+          description: Sort by name
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              type: string
+              example: Minecraft
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+
+    post:
+      tags: [games]
+      summary: Create a new game
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [name, price]
+            properties:
+              name:
+                type: string
+                example: Hades
+              price:
+                type: number
+                format: float
+                example: 19.99
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: "#/definitions/Game"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+        409:
+          description: Conflict
+          schema:
+            $ref: "#/definitions/Error"
+        415:
+          description: Unsupported Media Type
+          schema:
+            $ref: "#/definitions/Error"
+        422:
+          description: Unprocessable Entity
+          schema:
+            $ref: "#/definitions/Error"
+
+  /games/{id}:
+    get:
+      tags: [games]
+      summary: Get game details by id
+      description: Returns full details of a given game.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: integer
+          format: int32
+      responses:
+        200:
+          description: Full details of a given game
+          schema:
+            $ref: "#/definitions/Game"
+          examples:
+            application/json:
+              id: 3
+              name: Minecraft
+              price: 26.99
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+          examples:
+            application/json:
+              error: Invalid id. Must be a positive integer.
+        404:
+          description: Game was not found in games array
+          schema:
+            $ref: "#/definitions/Error"
+          examples:
+            application/json:
+              error: "Game \\w+ was not found in games array"
+
+definitions:
+  Game:
+    type: object
+    required: [id, name, price]
+    properties:
+      id:
+        type: integer
+        format: int32
+      name:
+        type: string
+      price:
+        type: number
+        format: float
+
+  Error:
+    type: object
+    required: [error]
+    properties:
+      error:
+        type: string
