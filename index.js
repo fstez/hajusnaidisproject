@@ -60,7 +60,7 @@ app.get('/games', (req, res) => {
     res.json(list);
 });
 
-// GET /games/:id — детали
+// GET /games/:id —  + детали
 app.get('/games/:id', (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -71,28 +71,16 @@ app.get('/games/:id', (req, res) => {
     res.json(game);
 });
 
-
 app.delete('/games/:id', (req, res) => {
-    const id = Number(req.params.id);
-
-    // валидация id
-    if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
-        // Returns 400 if id is invalid
+    if (typeof games[req.params.id - 1] === "undefined") {
+        return res.status(404).send({ error: "Game not found" })
     }
 
-    // ищем по полю id, а не по индексу массива
-    const idx = games.findIndex(g => g.id === id);
-    if (idx === -1) {
-        return res.status(404).json({ error: 'Game not found' });
-        // Returns 404 if game is not found
-    }
+    game.splice(req.params.id - 1, 1)
 
-    games.splice(idx, 1);
+    res.status(204).send({ error: "No content" })
+})
 
-    // успешно удалили — возвращаем 204 без тела
-    return res.status(204).end();
-});
 
 
 // Swagger UI
