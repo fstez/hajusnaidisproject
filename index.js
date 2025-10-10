@@ -1,11 +1,11 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
-//const swaggerDocument = require('./docs/swagger.json');
+const swaggerDocument = require('./docs/swagger.json');
 
 const app = express();
 const port = 8080;
 const yamljs = require('yamljs')
-const swaggerDocument = yamljs.load('./docs/swagger.yaml')
+//const swaggerDocument = yamljs.load('./docs/swagger.yaml')
 app.use(express.json());
 
 // данные
@@ -22,35 +22,26 @@ const games = [
 
 // POST /games — создание игры
 app.post('/games', (req, res) => {
-    // проверка Content-Type
-    if (!req.is('application/json')) {
-        return res.status(415).json({ error: 'Unsupported Media Type. Use application/json.' });
+    // простая проверка параметров
+    if (!req.body.name || !req.body.price) {
+        return res.status(400).send({ error: 'One or all params are missing' });
     }
 
-    const { name, price } = req.body || {};
+    // создать объект игры
+    let game = {
+        id: games.length + 1,
+        price: req.body.price,
+        name: req.body.name
+    };
 
-    // обязательные поля
-    if (!name || price === undefined) {
-        return res.status(400).json({ error: 'Missing required parameters: name, price' });
-    }
-    if (typeof name !== 'string' || String(name).trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid name' });
-    }
-    if (typeof price !== 'number' || Number.isNaN(price) || price < 0) {
-        return res.status(422).json({ error: 'Invalid price (must be >= 0 number)' });
-    }
-    // уникальность по name (для примера)
-    if (games.some(g => g.name.toLowerCase() === name.toLowerCase())) {
-        return res.status(409).json({ error: `Game '${name}' already exists` });
-    }
+    // сохранить
+    games.push(game);
 
-    const newGame = { id: games.length ? Math.max(...games.map(g => g.id)) + 1 : 1, name, price };
-    games.push(newGame);
-
-    // 201 Created + Location + тело ресурса
-    res.status(201)
-        .location(`/games/${newGame.id}`)
-        .json(newGame);
+    // 201 + Location + вернуть созданный ресурс
+    res
+        .status(201)
+        .location(`${getBaseUrl(req)}/games/${games.length}`)
+        .send(game);
 });
 
 // GET /games — имена (поиск + сортировка)
@@ -80,8 +71,39 @@ app.get('/games/:id', (req, res) => {
     res.json(game);
 });
 
+
+app.delete('/games/:id', (req, res) => {
+    const id = Number(req.params.id);
+
+    // валидация id
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
+        // Returns 400 if id is invalid
+    }
+
+    // ищем по полю id, а не по индексу массива
+    const idx = games.findIndex(g => g.id === id);
+    if (idx === -1) {
+        return res.status(404).json({ error: 'Game not found' });
+        // Returns 404 if game is not found
+    }
+
+    games.splice(idx, 1);
+
+    // успешно удалили — возвращаем 204 без тела
+    return res.status(204).end();
+});
+
+
 // Swagger UI
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/', (req, res) => res.redirect('/docs'));
 
 app.listen(port, () => console.log(`API up at: http://localhost:${port}`));
+
+
+
+function getBaseUrl(req) {
+    return req.connection && req.connection.encrypted
+        ? 'https' : 'http' + `://${req.headers.host}`
+}
