@@ -17,7 +17,26 @@
         "/games": {
             "get": {
                 "summary": "List games",
-                "description": "Returns an array of game names.",
+                "description": "Returns an array of game names. Supports search and ordering.",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Case-insensitive substring search by name"
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "default": "asc",
+                        "description": "Sort by name"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -27,6 +46,20 @@
                                 "type": "string",
                                 "example": "Minecraft"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "error"
+                            ]
                         }
                     }
                 }
