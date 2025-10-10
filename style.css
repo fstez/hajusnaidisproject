@@ -1,0 +1,177 @@
+:root {
+    --bg: #0e0f14;
+    --card: rgba(255, 255, 255, 0.08);
+    --stroke: rgba(255, 255, 255, 0.18);
+    --text: #e7e9f2;
+    --muted: #9aa3b2;
+    --accent: #6aa6ff;
+    --accent-2: #7bffca;
+    --danger: #ff6b6b;
+}
+
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    height: 100%
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(80rem 80rem at 10% 10%, #1a1f33 0%, transparent 60%),
+        radial-gradient(60rem 60rem at 90% 20%, #13201c 0%, transparent 60%),
+        linear-gradient(180deg, #0b0c12 0%, #0e0f14 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+}
+
+h1 {
+    margin: 0 0 .25rem 0
+}
+
+strong,
+p {
+    color: var(--muted);
+    max-width: 720px;
+    text-align: center
+}
+
+.glass-card {
+    width: min(480px, 92vw);
+    margin-top: 1rem;
+    padding: clamp(20px, 4vw, 28px);
+    border-radius: 20px;
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+
+/* Форма */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px
+}
+
+.form-title {
+    margin: .25rem 0 4px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px
+}
+
+.field span {
+    font-size: .95rem;
+    color: var(--muted)
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, .15);
+    background: rgba(255, 255, 255, .06);
+    color: var(--text);
+    outline: none;
+}
+
+input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(106, 166, 255, .15);
+}
+
+.password-wrap {
+    position: relative
+}
+
+.toggle-pass {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.05rem;
+    opacity: .8;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px
+}
+
+.between {
+    justify-content: space-between
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .95rem;
+    color: var(--muted)
+}
+
+.link {
+    color: var(--accent);
+    text-decoration: none
+}
+
+.link:hover {
+    text-decoration: underline
+}
+
+.btn {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #0b0c12;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .05s ease, filter .2s ease;
+}
+
+.btn:active {
+    transform: translateY(1px)
+}
+
+.btn.primary:hover {
+    filter: brightness(1.05)
+}
+
+.muted {
+    color: var(--muted)
+}
+
+.center {
+    text-align: center
+}
+
+.error {
+    color: var(--danger);
+    min-height: 1.1em;
+    font-size: .9rem
+}
