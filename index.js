@@ -4,6 +4,8 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./docs/swagger.json');
 const mongoose = require('mongoose');
 const Game = require('./models/game');
+const cors = require('cors');
+
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -14,7 +16,8 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch((error) => console.error('❌ Error connecting to MongoDB Atlas:', error));
 
 // Middleware
-app.use(express.json());
+app.use(cors());
+app.use(express.static('public'));
 
 // --- Временные тестовые данные (если база пустая) ---
 const games = [
@@ -49,24 +52,25 @@ app.post('/games', (req, res) => {
         .json(game);
 });
 
-// GET /games — список игр (поиск + сортировка)
+// GET /games — полный список объектов с поиском и сортировкой
 app.get('/games', (req, res) => {
     const { q, order = 'asc' } = req.query;
     if (!['asc', 'desc'].includes(order)) {
         return res.status(400).json({ error: 'Invalid order. Use asc or desc.' });
     }
 
-    let list = games.map(g => g.name);
+    let list = [...games]; // копия массива объектов
     if (q && q.trim()) {
         const s = q.toLowerCase();
-        list = list.filter(n => n.toLowerCase().includes(s));
+        list = list.filter(g => g.name.toLowerCase().includes(s));
     }
 
-    list.sort((a, b) => a.localeCompare(b));
+    list.sort((a, b) => a.name.localeCompare(b.name));
     if (order === 'desc') list.reverse();
 
-    res.json(list);
+    res.json(list); // << теперь отдаём ОБЪЕКТЫ
 });
+
 
 // GET /games/:id — детали игры
 app.get('/games/:id', (req, res) => {
