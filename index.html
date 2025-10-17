@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="et">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Andmebaasiga sidumine – MongoDB Atlas + Node.js (Express)</title>
+    <meta name="description"
+        content="Samm-sammuline juhend: MongoDB Atlas, Mongoose, Express API rajad (GET/POST/PUT/DELETE) ja testimine." />
+    <style>
+        :root {
+            --bg: #0f1220;
+            --panel: #14172a;
+            --panel-2: #181c33;
+            --text: #e8ecff;
+            --muted: #a6b0d8;
+            --brand: #7c9cff;
+            --brand-2: #5ad1ff;
+            --ok: #22c55e;
+            --warn: #f59e0b;
+            --err: #ef4444;
+            --border: rgba(255, 255, 255, .08);
+            --code: #0b0e1a;
+            --code-border: rgba(124, 156, 255, .25);
+            --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            color: var(--text);
+            background:
+                radial-gradient(1200px 600px at 20% -10%, rgba(124, 156, 255, .18), transparent 60%),
+                radial-gradient(900px 500px at 90% 10%, rgba(90, 209, 255, .15), transparent 60%),
+                linear-gradient(180deg, #0b0e1a 0%, #0f1220 100%);
+            min-width: 320px;
+        }
+
+        .container {
+            width: min(1100px, 92vw);
+            margin: 48px auto 80px;
+        }
+
+        header.hero {
+            background: linear-gradient(180deg, rgba(124, 156, 255, .08), rgba(124, 156, 255, 0) 60%);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) + 6px);
+            padding: 32px clamp(16px, 4vw, 32px);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero h1 {
+            margin: 0 0 8px;
+            font-size: clamp(24px, 3.6vw, 38px);
+            letter-spacing: .2px;
+        }
+
+        .hero p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            max-width: 70ch;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            border: 1px solid var(--border);
+            background: rgba(124, 156, 255, .08);
+            color: var(--brand-2);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        @media (min-width:900px) {
+            .grid {
+                grid-template-columns: 260px 1fr;
+            }
+        }
+
+        nav.toc {
+            position: sticky;
+            top: 24px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            height: max-content;
+        }
+
+        nav.toc h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: var(--muted);
+            letter-spacing: .6px;
+            text-transform: uppercase;
+        }
+
+        nav.toc a {
+            display: block;
+            color: var(--text);
+            text-decoration: none;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        nav.toc a:hover {
+            background: var(--panel-2);
+            color: var(--brand-2);
+        }
+
+        section.card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: clamp(16px, 3vw, 28px);
+            box-shadow: var(--shadow);
+        }
+
+        section.card h2 {
+            margin: 0 0 8px;
+            font-size: clamp(18px, 2.2vw, 24px);
+        }
+
+        section.card p {
+            color: var(--muted);
+            line-height: 1.75;
+        }
+
+        .steps {
+            display: grid;
+            gap: 10px;
+            margin: 14px 0 0;
+        }
+
+        .step {
+            background: var(--panel-2);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .step strong {
+            color: #fff
+        }
+
+        .media {
+            margin: 14px 0 4px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #0a0d1a;
+        }
+
+        .media img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .callout {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(90, 209, 255, .08);
+            color: var(--text);
+            margin: 14px 0 0;
+        }
+
+        .callout.ok {
+            background: rgba(34, 197, 94, .09);
+        }
+
+        .callout.warn {
+            background: rgba(245, 158, 11, .09);
+        }
+
+        .callout.err {
+            background: rgba(239, 68, 68, .09);
+        }
+
+        code,
+        pre {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 14px;
+        }
+
+        pre {
+            position: relative;
+            margin: 14px 0 0;
+            background: var(--code);
+            color: #e6f0ff;
+            border: 1px solid var(--code-border);
+            border-radius: 12px;
+            padding: 14px 14px 16px;
+            overflow: auto;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, .06);
+            color: #e6f0ff;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        a {
+            color: var(--brand-2);
+        }
+
+        .list {
+            display: grid;
+            gap: 10px;
+            margin: 10px 0 0;
+        }
+
+        .kbd {
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        footer {
+            margin-top: 28px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="hero">
+            <span class="badge">MongoDB Atlas • Node.js • Express • Mongoose</span>
+            <h1>Andmebaasiga sidumine</h1>
+            <p>
+                Samm-sammuline juhend, kuidas ühendada <strong>MongoDB Atlas</strong> Node.js rakendusega,
+                seadistada <strong>Mongoose</strong> ning luua lihtne <strong>Express REST API</strong> mängude
+                haldamiseks.
+            </p>
+        </header>
+
+        <div class="grid" style="margin-top:22px;">
+            <!-- TOC -->
+            <nav class="toc">
+                <h3>Sisu</h3>
+                <a href="#atlas">1. MongoDB Atlas</a>
+                <a href="#install">2. Paigaldamine</a>
+                <a href="#mongoose">3. Mongoose mudel</a>
+                <a href="#routes">4. API rajad</a>
+                <a href="#test">5. Testimine</a>
+            </nav>
+
+            <main class="content" style="display:grid; gap:22px;">
+                <!-- 1. Atlas -->
+                <section id="atlas" class="card">
+                    <h2>1) MongoDB Atlas</h2>
+                    <p>Alustame pilveandmebaasi loomisest teenuses <a
+                            href="https://www.mongodb.com/products/platform/atlas-database" target="_blank"
+                            rel="noopener">MongoDB Atlas</a>.</p>
+                    <div class="steps">
+                        <div class="step"><strong>1. Ava</strong> Atlas ja <strong>registreeru</strong> või <strong>logi
+                                sisse</strong>.</div>
+                        <div class="step"><strong>2. Loo</strong> uus <strong>Cluster</strong> (vali tasuta plaan).
+                        </div>
+                        <div class="step"><strong>3. Määra</strong> andmebaasile nimi ja
+                            <strong>kasutaja/parool</strong>.</div>
+                        <div class="step"><strong>4. Vali</strong> ühenduse viis: <span class="kbd">Connect → Drivers →
+                                Node.js</span>.</div>
+                        <div class="step"><strong>5. Kopeeri</strong> ühenduse string ja <strong>asenda</strong> sinna
+                            oma kasutajanimi/parool.</div>
+                    </div>
+                    <div class="media"><img src="img/newCluster.png" alt="Uue klastri loomine"></div>
+                    <div class="media"><img src="img/clusterConnection.png" alt="Ühenduse valik"></div>
+                    <div class="media"><img src="img/clusterString.png" alt="Connection string"></div>
+                    <div class="callout warn">Ära hoia päris paroole koodis. Kasuta <strong>.env</strong> faili (vt
+                        allpool).</div>
+                </section>
+
+                <!-- 2. Install -->
+                <section id="install" class="card">
+                    <h2>2) Paigaldamine</h2>
+                    <p>Projektis paigaldame vajalikud paketid ja seadistame keskkonnamuutujad.</p>
+
+                    <div class="list">
+                        <div class="step"><strong>Node.js</strong> projekt (kui vaja): <span class="kbd">npm init
+                                -y</span></div>
+                        <div class="step"><strong>Paigalda</strong> sõltuvused: Express, Swagger UI, Mongoose, Dotenv.
+                        </div>
+                    </div>
+
+                    <pre><button class="copy-btn" data-copy>Kopeeri</button><code>npm install express swagger-ui-express mongoose dotenv</code></pre>
+
+                    <p><strong>.env</strong> fail projekti juurkaustas:</p>
+                    <pre><button class="copy-btn" data-copy>Kopeeri</button><code>MONGODB_URI=mongodb+srv://&lt;USER&gt;:&lt;PASS&gt;@&lt;CLUSTER&gt;.mongodb.net/?retryWrites=true&amp;w=majority&amp;appName=Cluster0</code></pre>
+
+                    <div class="callout">
+                        Kasuta <strong>process.env.MONGODB_URI</strong> ühendamiseks ja hoia repo puhtana: lisa <span
+                            class="kbd">.env</span> faili <span class="kbd">.gitignore</span>-i.
+                    </div>
+                </section>
+
+                <!-- 3. Mongoose model -->
+                <section id="mongoose" class="card">
+                    <h2>3) Mongoose: mudel <code>Game</code></h2>
+                    <p>Luuakse lihtne skeem, kus <code>id</code> on unikaalne, lisaks nimi ja hind.</p>
+                    <pre><button class="copy-btn" data-copy>Kopeeri</button><code>// models/game.js
+const mongoose = require('mongoose');
+
+const gameSchema = new mongoose.Schema({
+  id:   { type: Number, required: true, unique: true, index: true },
+  name: { type: String, required: true },
+  price:{ type: Number, required: true }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Game', gameSchema);</code></pre>
+                </section>
+
+                <!-- 4. Routes -->
+                <section id="routes" class="card">
+                    <h2>4) Express API rajad</h2>
+                    <p>All on näidised <strong>GET</strong>, <strong>POST</strong>, <strong>PUT</strong>,
+                        <strong>DELETE</strong> jaoks. Kui kasutad praegu mälus hoitavat massiivi, jätka nii; kui kolid
+                        MongoDB-le, asenda loogika Mongoose päringutega.</p>
+
+                    <pre><button class="copy-btn" data-copy>Kopeeri</button><code>// index.js (põhiosa)
+require('dotenv').config();
+const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./docs/swagger.json');
+const mongoose = require('mongoose');
+const Game = require('./models/game');
+
+const app = express();
+const port = process.env.PORT || 8080;
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+app.use(express.json());
+
+// DEMO: mälupõhine andmestik (vajadusel)
+const games = [
+  { id: 1, name: 'Witcher 3', price: 29.99 },
+  { id: 2, name: 'Cyberpunk 2077', price: 59.99 },
+  { id: 3, name: 'Minecraft',   price: 26.99 }
+];
+
+// POST /games — loo uus
+app.post('/games', (req, res) => {
+  const { name, price } = req.body;
+  if (name == null || price == null) {
+    return res.status(400).json({ error: 'One or all params are missing' });
+  }
+  const game = { id: games.length + 1, name, price };
+  games.push(game);
+  res.status(201)
+     .location(`${getBaseUrl(req)}/games/${game.id}`)
+     .json(game);
+});
+
+// GET /games — nimed (otsing + sorteerimine)
+app.get('/games', (req, res) => {
+  const { q, order = 'asc' } = req.query;
+  if (!['asc', 'desc'].includes(order)) {
+    return res.status(400).json({ error: 'Invalid order. Use asc or desc.' });
+  }
+  let list = games.map(g => g.name);
+  if (q?.trim()) {
+    const s = q.toLowerCase();
+    list = list.filter(n => n.toLowerCase().includes(s));
+  }
+  list.sort((a, b) => a.localeCompare(b));
+  if (order === 'desc') list.reverse();
+  res.json(list);
+});
+
+// GET /games/:id — detailid
+app.get('/games/:id', (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id &lt;= 0) {
+    return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
+  }
+  const game = games.find(g => g.id === id);
+  if (!game) return res.status(404).json({ error: `Game with id=${id} not found` });
+  res.json(game);
+});
+
+// DELETE /games/:id — kustuta
+app.delete('/games/:id', (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id &lt;= 0) {
+    return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
+  }
+  const idx = games.findIndex(g => g.id === id);
+  if (idx === -1) return res.status(404).json({ error: 'Game not found' });
+  games.splice(idx, 1);
+  res.status(204).end();
+});
+
+// Swagger UI
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.get('/', (req, res) => res.redirect('/docs'));
+
+app.listen(port, () => console.log(`API up at: http://localhost:${port}`));
+
+function getBaseUrl(req) {
+  const protocol = (req.connection && req.connection.encrypted) ? 'https' : 'http';
+  return `${protocol}://${req.headers.host}`;
+}</code></pre>
+
+                    <div class="callout ok">
+                        Kui liigud Mongoose peale, asenda mälukutsed meetoditega nagu
+                        <code>Game.find()</code>, <code>Game.create()</code>,
+                        <code>Game.findOneAndUpdate()</code>, <code>Game.findOneAndDelete()</code>.
+                    </div>
+                </section>
+
+                <!-- 5. Test -->
+                <section id="test" class="card">
+                    <h2>5) Testimine</h2>
+                    <p>Käivita server ja testi Swagger UI kaudu.</p>
+
+                    <div class="steps">
+                        <div class="step"><strong>Käivita:</strong> <span class="kbd">node index.js</span></div>
+                        <div class="step"><strong>Ava brauseris:</strong> <a
+                                href="http://localhost:8080/docs">http://localhost:8080/docs</a></div>
+                    </div>
+
+                    <div class="media"><img src="img/clusterMetrix.png" alt="Klastri mõõdikud"></div>
+
+                    <div class="callout">
+                        Kui näed vigu stiilis <em>Could not resolve reference</em> Swaggeris, veendu et
+                        plokid <code>definitions</code> (Swagger 2.0) on <strong>juurtasandil</strong> ja
+                        <code>$ref</code> viited on õiged (näide: <code>#/definitions/Error</code>).
+                    </div>
+                    <div class="callout err">
+                        Ära hoia tootmisparoolide või pikaajaliste võtmete koopiaid avalikes repo-des.
+                    </div>
+                </section>
+
+                <footer>
+                    © Sinu projekt • Õppematerjal. Viimati uuendatud täna.
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Copy-to-clipboard for code blocks
+        document.querySelectorAll('[data-copy]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const code = btn.nextElementSibling?.innerText ?? '';
+                try {
+                    await navigator.clipboard.writeText(code);
+                    const old = btn.textContent;
+                    btn.textContent = 'Kopeeritud ✓';
+                    setTimeout(() => btn.textContent = old, 1200);
+                } catch (e) {
+                    btn.textContent = 'Viga :(';
+                    setTimeout(() => btn.textContent = 'Kopeeri', 1200);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
