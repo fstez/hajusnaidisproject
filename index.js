@@ -1,14 +1,22 @@
+require('dotenv').config();
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./docs/swagger.json');
+const mongoose = require('mongoose');
+const Game = require('./models/game');
 
 const app = express();
-const port = 8080;
-const yamljs = require('yamljs')
-//const swaggerDocument = yamljs.load('./docs/swagger.yaml')
+const port = process.env.PORT || 8080;
+
+// Подключение к MongoDB Atlas
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ Connected to MongoDB Atlas'))
+    .catch((error) => console.error('❌ Error connecting to MongoDB Atlas:', error));
+
+// Middleware
 app.use(express.json());
 
-// данные
+// --- Временные тестовые данные (если база пустая) ---
 const games = [
     { id: 1, name: 'Witcher 3', price: 29.99 },
     { id: 2, name: 'Cyberpunk 2077', price: 59.99 },
@@ -20,57 +28,60 @@ const games = [
     { id: 8, name: 'Forza Horizon 5', price: 59.99 }
 ];
 
-// POST /games — создание игры
+// --- API endpoints ---
+
+// POST /games — создать игру
 app.post('/games', (req, res) => {
-    // простая проверка параметров
     if (!req.body.name || !req.body.price) {
-        return res.status(400).send({ error: 'One or all params are missing' });
+        return res.status(400).json({ error: 'One or all params are missing' });
     }
 
-    // создать объект игры
-    let game = {
+    const game = {
         id: games.length + 1,
-        price: req.body.price,
-        name: req.body.name
+        name: req.body.name,
+        price: req.body.price
     };
 
-    // сохранить
     games.push(game);
-
-    // 201 + Location + вернуть созданный ресурс
     res
         .status(201)
-        .location(`${getBaseUrl(req)}/games/${games.length}`)
-        .send(game);
+        .location(`${getBaseUrl(req)}/games/${game.id}`)
+        .json(game);
 });
 
-// GET /games — имена (поиск + сортировка)
+// GET /games — список игр (поиск + сортировка)
 app.get('/games', (req, res) => {
     const { q, order = 'asc' } = req.query;
-    if (order && !['asc', 'desc'].includes(order)) {
+    if (!['asc', 'desc'].includes(order)) {
         return res.status(400).json({ error: 'Invalid order. Use asc or desc.' });
     }
+
     let list = games.map(g => g.name);
     if (q && q.trim()) {
         const s = q.toLowerCase();
         list = list.filter(n => n.toLowerCase().includes(s));
     }
+
     list.sort((a, b) => a.localeCompare(b));
     if (order === 'desc') list.reverse();
+
     res.json(list);
 });
 
-// GET /games/:id —  + детали
+// GET /games/:id — детали игры
 app.get('/games/:id', (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
     }
+
     const game = games.find(g => g.id === id);
     if (!game) return res.status(404).json({ error: `Game with id=${id} not found` });
+
     res.json(game);
 });
 
+// DELETE /games/:id — удалить игру
 app.delete('/games/:id', (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -83,20 +94,17 @@ app.delete('/games/:id', (req, res) => {
     }
 
     games.splice(idx, 1);
-    return res.status(204).end();
+    res.status(204).end();
 });
-
-
 
 // Swagger UI
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/', (req, res) => res.redirect('/docs'));
 
-app.listen(port, () => console.log(`API up at: http://localhost:${port}`));
-
-
+// Запуск сервера
+app.listen(port, () => console.log(`🚀 API running at: http://localhost:${port}`));
 
 function getBaseUrl(req) {
-    return req.connection && req.connection.encrypted
-        ? 'https' : 'http' + `://${req.headers.host}`
+    const protocol = req.connection && req.connection.encrypted ? 'https' : 'http';
+    return `${protocol}://${req.headers.host}`;
 }

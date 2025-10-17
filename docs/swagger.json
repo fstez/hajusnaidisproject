@@ -46,8 +46,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string",
-                                "example": "Minecraft"
+                                "type": "string"
                             }
                         }
                     },
@@ -74,13 +73,11 @@
                             ],
                             "properties": {
                                 "name": {
-                                    "type": "string",
-                                    "example": "Hades"
+                                    "type": "string"
                                 },
                                 "price": {
                                     "type": "number",
-                                    "format": "float",
-                                    "example": 19.99
+                                    "format": "float"
                                 }
                             }
                         }
@@ -123,9 +120,6 @@
         "/games/{id}": {
             "get": {
                 "summary": "Get game details by id",
-                "tags": [
-                    "games"
-                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -158,9 +152,6 @@
             },
             "delete": {
                 "summary": "Delete game by id",
-                "tags": [
-                    "games"
-                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -187,39 +178,40 @@
                         }
                     }
                 }
-            },
-            "definitions": {
-                "Game": {
-                    "type": "object",
-                    "required": [
-                        "id",
-                        "name",
-                        "price"
-                    ],
-                    "properties": {
-                        "id": {
-                            "type": "integer",
-                            "format": "int32"
-                        },
-                        "name": {
-                            "type": "string"
-                        },
-                        "price": {
-                            "type": "number",
-                            "format": "float"
-                        }
-                    }
+            }
+        }
+    },
+    "definitions": {
+        "Game": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "price"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "format": "int32"
                 },
-                "Error": {
-                    "type": "object",
-                    "required": [
-                        "error"
-                    ],
-                    "properties": {
-                        "error": {
-                            "type": "string"
-                        }
-                    }
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number",
+                    "format": "float"
+                }
+            }
+        },
+        "Error": {
+            "type": "object",
+            "required": [
+                "error"
+            ],
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Cleartext explanation of the error that occurred"
                 }
             }
         }
