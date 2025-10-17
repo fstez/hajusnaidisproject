@@ -3,112 +3,157 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./docs/swagger.json');
 const mongoose = require('mongoose');
-const Game = require('./models/game');
 const cors = require('cors');
-
+const Game = require('./models/game');
 
 const app = express();
 const port = process.env.PORT || 8080;
-//
-// Подключение к MongoDB Atlas
+
+// --- DB ---
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas'))
     .catch((error) => console.error('❌ Error connecting to MongoDB Atlas:', error));
 
-// Middleware
+// --- Middleware ---
 app.use(cors());
-app.use(express.static('public'));
+app.use(express.json());
+app.use(express.static('public')); // выдаёт public/test.html и т.п.
 
-// --- Временные тестовые данные (если база пустая) ---
-const games = [
-    { id: 1, name: 'Witcher 3', price: 29.99 },
-    { id: 2, name: 'Cyberpunk 2077', price: 59.99 },
-    { id: 3, name: 'Minecraft', price: 26.99 },
-    { id: 4, name: 'Counter-Strike: Global Offensive', price: 0 },
-    { id: 5, name: 'Roblox', price: 0 },
-    { id: 6, name: 'Grand Theft Auto V', price: 29.99 },
-    { id: 7, name: 'Valorant', price: 0 },
-    { id: 8, name: 'Forza Horizon 5', price: 59.99 }
-];
+// --- helpers ---
+function bad(req, res, code, msg) { return res.status(code).json({ error: msg }); }
+function getBaseUrl(req) {
+    const protocol = req.connection && req.connection.encrypted ? 'https' : 'http';
+    return `${protocol}://${req.headers.host}`;
+}
+function isNum(v) { return typeof v === 'number' && !Number.isNaN(v); }
 
-// --- API endpoints ---
+// --- API ---
+// CREATE
+app.post('/games', async (req, res) => {
+    try {
+        const { name, price } = req.body || {};
+        if (typeof name !== 'string' || !name.trim() || !isNum(Number(price))) {
+            return bad(req, res, 400, 'Invalid body. Expect { name: string, price: number }');
+        }
 
-// POST /games — создать игру
-app.post('/games', (req, res) => {
-    if (!req.body.name || !req.body.price) {
-        return res.status(400).json({ error: 'One or all params are missing' });
+        // ауто-инкремент id (простой способ)
+        const last = await Game.findOne().sort({ id: -1 }).lean();
+        const nextId = (last?.id || 0) + 1;
+
+        const created = await Game.create({
+            id: nextId,
+            name: name.trim(),
+            price: Number(price)
+        });
+
+        // уберём служебные поля
+        const { _id, __v, ...clean } = created.toObject();
+        return res.status(201)
+            .location(`${getBaseUrl(req)}/games/${clean.id}`)
+            .json(clean);
+    } catch (e) {
+        // нарушение unique(id) и т.п.
+        return bad(req, res, 422, e.message || 'Unprocessable Entity');
     }
-
-    const game = {
-        id: games.length + 1,
-        name: req.body.name,
-        price: req.body.price
-    };
-
-    games.push(game);
-    res
-        .status(201)
-        .location(`${getBaseUrl(req)}/games/${game.id}`)
-        .json(game);
 });
 
-// GET /games — полный список объектов с поиском и сортировкой
-app.get('/games', (req, res) => {
-    const { q, order = 'asc' } = req.query;
-    if (!['asc', 'desc'].includes(order)) {
-        return res.status(400).json({ error: 'Invalid order. Use asc or desc.' });
+// READ list (поиск + сортировка), возвращаем ОБЪЕКТЫ
+app.get('/games', async (req, res) => {
+    try {
+        const { q, order = 'asc' } = req.query;
+        if (!['asc', 'desc'].includes(order)) {
+            return bad(req, res, 400, 'Invalid order. Use asc or desc.');
+        }
+
+        const query = {};
+        if (q && q.trim()) {
+            query.name = { $regex: q.trim(), $options: 'i' };
+        }
+
+        const sort = { name: order === 'asc' ? 1 : -1 };
+        const rows = await Game.find(query, { _id: 0, __v: 0 }).sort(sort).lean();
+        return res.json(rows);
+    } catch (e) {
+        return bad(req, res, 500, e.message || 'Server error');
     }
-
-    let list = [...games]; // копия массива объектов
-    if (q && q.trim()) {
-        const s = q.toLowerCase();
-        list = list.filter(g => g.name.toLowerCase().includes(s));
-    }
-
-    list.sort((a, b) => a.name.localeCompare(b.name));
-    if (order === 'desc') list.reverse();
-
-    res.json(list); // << теперь отдаём ОБЪЕКТЫ
 });
 
-
-// GET /games/:id — детали игры
-app.get('/games/:id', (req, res) => {
+// READ item
+app.get('/games/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
+        return bad(req, res, 400, 'Invalid id. Must be a positive integer.');
     }
-
-    const game = games.find(g => g.id === id);
-    if (!game) return res.status(404).json({ error: `Game with id=${id} not found` });
-
-    res.json(game);
+    const game = await Game.findOne({ id }, { _id: 0, __v: 0 }).lean();
+    if (!game) return bad(req, res, 404, `Game with id=${id} not found`);
+    return res.json(game);
 });
 
-// DELETE /games/:id — удалить игру
-app.delete('/games/:id', (req, res) => {
+// UPDATE (полная замена name/price)
+app.put('/games/:id', async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid id. Must be a positive integer.' });
+        return bad(req, res, 400, 'Invalid id. Must be a positive integer.');
+    }
+    const { name, price } = req.body || {};
+    if (typeof name !== 'string' || !name.trim() || !isNum(Number(price))) {
+        return bad(req, res, 400, 'Invalid body. Expect { name: string, price: number }');
     }
 
-    const idx = games.findIndex(g => g.id === id);
-    if (idx === -1) {
-        return res.status(404).json({ error: 'Game not found' });
-    }
+    const updated = await Game.findOneAndUpdate(
+        { id },
+        { $set: { name: name.trim(), price: Number(price) } },
+        { new: true, projection: { _id: 0, __v: 0 } }
+    ).lean();
 
-    games.splice(idx, 1);
-    res.status(204).end();
+    if (!updated) return bad(req, res, 404, 'Game not found');
+    return res.json(updated);
+});
+
+// PATCH (частичное обновление; опционально фронт может использовать PUT)
+app.patch('/games/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return bad(req, res, 400, 'Invalid id. Must be a positive integer.');
+    }
+    const patch = {};
+    if (req.body?.name !== undefined) {
+        if (typeof req.body.name !== 'string' || !req.body.name.trim())
+            return bad(req, res, 400, 'Invalid name');
+        patch.name = req.body.name.trim();
+    }
+    if (req.body?.price !== undefined) {
+        if (!isNum(Number(req.body.price)))
+            return bad(req, res, 400, 'Invalid price');
+        patch.price = Number(req.body.price);
+    }
+    if (!Object.keys(patch).length) return bad(req, res, 400, 'No fields to update');
+
+    const updated = await Game.findOneAndUpdate(
+        { id }, { $set: patch },
+        { new: true, projection: { _id: 0, __v: 0 } }
+    ).lean();
+
+    if (!updated) return bad(req, res, 404, 'Game not found');
+    return res.json(updated);
+});
+
+// DELETE
+app.delete('/games/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return bad(req, res, 400, 'Invalid id. Must be a positive integer.');
+    }
+    const deleted = await Game.findOneAndDelete({ id }).lean();
+    if (!deleted) return bad(req, res, 404, 'Game not found');
+    return res.status(204).end();
 });
 
 // Swagger UI
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get('/', (req, res) => res.redirect('/docs'));
 
-// Запуск сервера
-app.listen(port, () => console.log(`🚀 API running at: http://localhost:${port}`));
+// favicon 204, чтобы консоль не мусорила
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-function getBaseUrl(req) {
-    const protocol = req.connection && req.connection.encrypted ? 'https' : 'http';
-    return `${protocol}://${req.headers.host}`;
-}
+app.listen(port, () => console.log(`🚀 API running at: http://localhost:${port}`));
