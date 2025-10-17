@@ -2,15 +2,91 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Test github loomine</title>
+    <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
 
     <h1>Testing github fail</h1>
+    <strong>Litetrackeri referense kood on lisatud branch-nimele</strong>
+    <p>ja veel sama kood algusega # lisame commitile []</p>
 
+    <div class="glass-card">
+        <form class="auth-form" action="/login" method="post" novalidate>
+            <h2 class="form-title">Logi sisse</h2>
+
+            <label class="field">
+                <span>E-post või kasutajanimi</span>
+                <input type="text" name="identifier" placeholder="name@example.com" required autocomplete="username"
+                    aria-label="Email või kasutajanimi" />
+                <small class="error" data-error-for="identifier"></small>
+            </label>
+
+            <label class="field">
+                <span>Parool</span>
+                <div class="password-wrap">
+                    <input id="password" type="password" name="password" placeholder="••••••••" required minlength="6"
+                        autocomplete="current-password" aria-label="Parool" />
+                    <button type="button" class="toggle-pass" aria-label="Näita parooli">
+                        👁
+                    </button>
+                </div>
+                <small class="error" data-error-for="password"></small>
+            </label>
+
+            <div class="row between">
+                <label class="checkbox">
+                    <input type="checkbox" name="remember" />
+                    <span>Pea mind meeles</span>
+                </label>
+                <a class="link" href="/forgot">Unustasid parooli?</a>
+            </div>
+
+            <button class="btn primary" type="submit">Logi sisse</button>
+
+            <p class="muted center">
+                Pole kontot? <a class="link" href="/register">Loo konto</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        // Показ/скрытие пароля
+        document.querySelector('.toggle-pass').addEventListener('click', function () {
+            const input = document.getElementById('password');
+            const isPwd = input.type === 'password';
+            input.type = isPwd ? 'text' : 'password';
+            this.textContent = isPwd ? '🙈' : '👁';
+            this.setAttribute('aria-label', isPwd ? 'Peida parooli' : 'Näita parooli');
+        });
+
+        // Простая клиентская валидация
+        document.querySelector('.auth-form').addEventListener('submit', function (e) {
+            let ok = true;
+
+            const id = this.identifier;
+            const pw = this.password;
+
+            // чистим ошибки
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+
+            if (!id.value.trim()) {
+                ok = false;
+                document.querySelector('[data-error-for="identifier"]').textContent =
+                    'See väli on kohustuslik.';
+            }
+            if (!pw.value || pw.value.length < 6) {
+                ok = false;
+                document.querySelector('[data-error-for="password"]').textContent =
+                    'Parool peab olema vähemalt 6 märki.';
+            }
+
+            if (!ok) e.preventDefault();
+        });
+    </script>
 </body>
 
 </html>
