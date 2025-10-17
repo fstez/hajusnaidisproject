@@ -7,7 +7,7 @@ const Game = require('./models/game');
 
 const app = express();
 const port = process.env.PORT || 8080;
-
+//
 // Подключение к MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('✅ Connected to MongoDB Atlas'))
